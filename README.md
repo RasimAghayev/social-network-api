@@ -1,4 +1,6 @@
 # social-network-api
+![Views](https://hits.sh/github.com/RasimAghayev/social-network-api.svg?label=views&color=0e75b6)
+
 
 A personal follow-along of Brad Traversy's **"MERN Stack Front To Back"**
 course — building a social-network REST API (Node/Express/MongoDB) with a
