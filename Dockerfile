@@ -6,7 +6,7 @@
 # The base image is pinned by digest: the lock file is resolved against
 # Node.js 22, and a floating tag would let the runtime drift away from the
 # platform the lock file was built for.
-FROM node:22-alpine@sha256:0e1754758c2df4cfa3e68d59e2e1b7374bb7fd9ea6328eaaacf15cc934af8202 AS deps
+FROM node:26-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216 AS deps
 
 WORKDIR /app
 
