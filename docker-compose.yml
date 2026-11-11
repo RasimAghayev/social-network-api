@@ -1,0 +1,94 @@
+name: "social-network-api"
+
+# Every bind mount of the stack lives under var/ (R92): the local environment
+# file and the database state. The application source is baked into the image,
+# so no versioned directory is mounted into a container. Named volumes are
+# forbidden.
+#
+# Resource limits are required for every service (R60, R64, R102).
+x-resources-default: &resources-default
+  deploy:
+    resources:
+      limits:
+        cpus: "1.0"
+        memory: 512M
+        pids: 256
+      reservations:
+        cpus: "0.25"
+        memory: 128M
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: mern_bt_app
+    restart: always
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - var/.env
+    environment:
+      NODE_ENV: production
+      PORT: "5000"
+      # The application reads the connection string from the environment. The
+      # service name of the database is resolvable inside the network, so the
+      # local value needs no user name and no password.
+      MONGODB_URI: mongodb://mongo:27017/social-network-api
+    ports:
+      - "${APP_PORT:-5000}:5000"
+    <<: *resources-default
+    networks:
+      - social-network-api
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    profiles: ["test"]
+    # The suite needs neither a database nor the network, so the service
+    # depends on nothing and starts on its own.
+    #
+    # No env_file on purpose. The suite asserts that a missing secret is
+    # refused, and the values of the local machine would answer that
+    # assertion before the test could. The image carries no .env, so the
+    # process starts with an empty environment.
+    <<: *resources-default
+    networks:
+      - social-network-api
+
+  lint:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test
+    profiles: ["test"]
+    entrypoint: ["npm", "run", "lint"]
+    <<: *resources-default
+    networks:
+      - social-network-api
+
+  mongo:
+    build:
+      context: .
+      dockerfile: mongodb.dockerfile
+    container_name: mern_bt_mongo
+    restart: always
+    volumes:
+      - ./var/mongo:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    <<: *resources-default
+    networks:
+      - social-network-api
+
+networks:
+  social-network-api:
+    name: social-network-api
