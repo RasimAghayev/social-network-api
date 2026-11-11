@@ -1,12 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const config = require('config');
 const bcrypt = require('bcryptjs');
 const { check, validationResult } = require('express-validator');
 
 const router = express.Router();
 
 const auth = require('../../middleware/auth');
+const { getJwtSecret } = require('../../config/secrets');
 const User = require('../../models/User');
 
 // @router  GET     api/auth
@@ -16,7 +16,8 @@ const User = require('../../models/User');
 router.get('/', auth, async (req, res) => {
   try {
     const user = await User.findOne({ _id: req.user.id }).select('-password');
-    console.log(user);
+    if (!user) return res.status(404).json({ msg: 'User not found.' });
+
     res.json(user);
   } catch (err) {
     console.log(err.message);
@@ -45,7 +46,7 @@ router.post(
 
     try {
       // See if user exists
-      let user = await User.findOne({ email });
+      const user = await User.findOne({ email });
       if (!user) {
         return res
           .status(400)
@@ -69,8 +70,8 @@ router.post(
 
       jwt.sign(
         payload,
-        config.get('jwtSecretKey'),
-        { expiresIn: 360000 },
+        getJwtSecret(),
+        { expiresIn: 360000, algorithm: 'HS256' },
         (err, token) => {
           if (err) throw err;
           return res.json({ token });

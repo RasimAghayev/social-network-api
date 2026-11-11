@@ -8,6 +8,9 @@ const auth = require('../../middleware/auth');
 const Profile = require('../../models/Profile');
 const User = require('../../models/User');
 
+// Utils
+const { parsePagination } = require('../../utils/pagination');
+
 // Router
 const router = express.Router();
 
@@ -123,7 +126,11 @@ router.post(
 
 router.get('/', async (req, res) => {
   try {
-    const profiles = await Profile.find().populate('user', ['name', 'avatar']);
+    const { limit, skip } = parsePagination(req.query);
+    const profiles = await Profile.find()
+      .populate('user', ['name', 'avatar'])
+      .skip(skip)
+      .limit(limit);
     if (!profiles) return res.status(400).json({ msg: 'There is no profiles' });
 
     res.json(profiles);
@@ -148,7 +155,7 @@ router.get('/user/:user_id', async (req, res) => {
     res.json(profile);
   } catch (err) {
     console.log(err.message);
-    if (err.kind == 'ObjectId') {
+    if (err.kind === 'ObjectId') {
       return res.status(400).json({ msg: 'Invalid User Id' });
     }
     res.status(500).send('Server error');
@@ -159,7 +166,7 @@ router.get('/user/:user_id', async (req, res) => {
 // @desc    Delete profile, user & posts
 // @access  Private
 
-router.delete('/', async (req, res) => {
+router.delete('/', auth, async (req, res) => {
   try {
     await Profile.findOneAndRemove({ user: req.user.id });
     await User.findByIdAndRemove({ _id: req.user.id });
@@ -167,7 +174,7 @@ router.delete('/', async (req, res) => {
     res.json({ msg: 'User deleted.' });
   } catch (err) {
     console.log(err.message);
-    if (err.kind == 'ObjectId') {
+    if (err.kind === 'ObjectId') {
       return res.status(400).json({ msg: 'Invalid User Id' });
     }
     res.status(500).send('Server error');
@@ -229,93 +236,27 @@ router.delete('/experience/:exp_id', auth, async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user.id });
 
-    // Get remove Index
-    const removeIndex = profile.experience
-      .map((item) => item.id)
-      .indexOf(req.params.exp_id);
-
-    profile.experience.splice(removeIndex, 1);
-
-    await profile.save();
-
-    res.json({ msg: 'User deleted.' });
-  } catch (err) {
-    console.log(err.message);
-    if (err.kind == 'ObjectId') {
-      return res.status(400).json({ msg: 'Invalid User Id' });
+    if (!profile) {
+      return res.status(404).json({ msg: 'There is no profile for this user.' });
     }
-    res.status(500).send('Server error');
-  }
-});
-
-// @router  PUT     api/profile/experience
-// @desc    Add profile experience
-// @access  Private
-
-router.put(
-  '/experience',
-  [
-    auth,
-    check('title', 'Title is required.').not().isEmpty(),
-    check('company', 'Company is required.').not().isEmpty(),
-    check('from', 'From date is required.').not().isEmpty(),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { title, company, location, from, to, current, description } =
-      req.body;
-
-    const newExp = {
-      title,
-      company,
-      location,
-      from,
-      to,
-      current,
-      description,
-    };
-
-    try {
-      const profile = await Profile.findOne({ user: req.user.id });
-
-      profile.experience.unshift(newExp);
-
-      await profile.save();
-
-      return res.json(profile);
-    } catch (err) {
-      console.log(err.message);
-      return res.status(500).json({ errors: [{ msg: 'Server error' }] });
-    }
-  }
-);
-
-// @router  DELETE     api/profile/experience/:exp_id
-// @desc    Delete experience from profile
-// @access  Private
-
-router.delete('/experience/:exp_id', auth, async (req, res) => {
-  try {
-    const profile = await Profile.findOne({ user: req.user.id });
 
     // Get remove Index
     const removeIndex = profile.experience
       .map((item) => item.id)
       .indexOf(req.params.exp_id);
 
+    if (removeIndex === -1) {
+      return res.status(404).json({ msg: 'Experience not found.' });
+    }
+
     profile.experience.splice(removeIndex, 1);
 
     await profile.save();
 
-    res.json({ msg: 'User deleted.' });
+    res.json({ msg: 'Experience deleted.' });
   } catch (err) {
     console.log(err.message);
-    if (err.kind == 'ObjectId') {
+    if (err.kind === 'ObjectId') {
       return res.status(400).json({ msg: 'Invalid User Id' });
     }
     res.status(500).send('Server error');
@@ -378,19 +319,27 @@ router.delete('/education/:edu_id', auth, async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user.id });
 
+    if (!profile) {
+      return res.status(404).json({ msg: 'There is no profile for this user.' });
+    }
+
     // Get remove Index
     const removeIndex = profile.education
       .map((item) => item.id)
       .indexOf(req.params.edu_id);
 
+    if (removeIndex === -1) {
+      return res.status(404).json({ msg: 'Education not found.' });
+    }
+
     profile.education.splice(removeIndex, 1);
 
     await profile.save();
 
-    res.json({ msg: 'User deleted.' });
+    res.json({ msg: 'Education deleted.' });
   } catch (err) {
     console.log(err.message);
-    if (err.kind == 'ObjectId') {
+    if (err.kind === 'ObjectId') {
       return res.status(400).json({ msg: 'Invalid User Id' });
     }
     res.status(500).send('Server error');

@@ -1,1 +1,28 @@
 node_modules/
+coverage/
+.nyc_output/
+tmp/
+logs/
+*.log
+npm-debug.log*
+
+# Local configuration overrides of the `config` package. They can hold
+# credentials, so they never belong in the repository.
+config/local.json
+config/production.json
+config/default.json
+
+# IDE / editor artifacts are never committed.
+.vscode/
+.idea/
+
+# Environment files. `.env.example` is the tracked template.
+.env
+.env.*
+!.env.example
+
+.DS_Store
+
+# Runtime state of the compose stack (R92). The local environment file and
+# the database data live here.
+var/

@@ -1,7 +1,20 @@
+require('dotenv').config();
+
 const express = require('express');
 const connectDB = require('./config/db');
+const { assertSecretsConfigured } = require('./config/secrets');
 
 const app = express();
+
+// Refuse to start a production run without a database connection string and a
+// token signing secret. A missing value stops the process here instead of
+// failing later on the first request.
+try {
+  assertSecretsConfigured();
+} catch (err) {
+  console.error(`[startup] ${err.message}`);
+  process.exit(1);
+}
 
 //Connect DB
 connectDB();
