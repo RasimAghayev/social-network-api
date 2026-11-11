@@ -10,6 +10,11 @@ npm-debug.log*
 # credentials, so they never belong in the repository.
 config/local.json
 config/production.json
+config/default.json
+
+# IDE / editor artifacts are never committed.
+.vscode/
+.idea/
 
 # Environment files. `.env.example` is the tracked template.
 .env
