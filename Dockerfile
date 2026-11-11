@@ -13,7 +13,10 @@ WORKDIR /app
 # The lock file alone decides the dependency tree, so it is copied on its own
 # and the layer is reused whenever only the application code changes.
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# BuildKit cache mount: the npm cache survives across builds so a dependency
+# tree that did not change is reinstalled from cache instead of the network.
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --no-fund
 
 
 FROM deps AS prod-deps
